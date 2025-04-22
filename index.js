@@ -1,56 +1,79 @@
 import * as readline from 'node:readline';
 import { stdin as input, stdout as output } from 'node:process';
-import https from 'node:https';
 
-import { API_URL } from './utils/constants.js';
+import { getRandomJoke, getJoke, getTenRandomJokes } from './utils/services.js';
+import { invalidInputInfo } from './utils/constants.js';
 
-const headers = {
-  Accept: 'text/plain',
-};
+// const jokes = await import('../jokes.json', {
+//   assert: { type: 'json' }
+// });
+
+
+
 
 const rl = readline.createInterface({ input, output });
 
 const str = `1. Get a random joke
 2. Search for a joke by keyword
 3. Get 10 random jokes
-4. Quit\n`;
+4. Get the most popular joke
+5. Quit\n`;
 
 rl.setPrompt(str);
 rl.prompt();
 
 rl.on('line', main);
 
-function main(answer) {
+
+async function main(answer) {
   if (answer == 1) {
-    https.get(API_URL, { headers }, res => {
-      res.on('data', data => {
-        const res = data.toString('utf8');
 
-        console.log(`${res}\n`);
-        rl.prompt();
-      });
-    });
+    const res = await getRandomJoke();
+    console.log(`\n${res}`);
+    rl.prompt();
+
   } else if (answer == 2) {
-    rl.question('Enter the word you are looking for:\n', msg => {
-      https.get(`${API_URL}/search?term=${msg}`, { headers }, res => {
-        res.on('data', data => {
-          const res = data.toString('utf8');
 
-          console.log(`\n${res}\n`);
-          rl.prompt();
-        });
-      });
-    });
-  } else if (answer == 3) {
-    https.get(`${API_URL}/search`, { headers }, res => {
-      res.on('data', data => {
-        const res = data.toString('utf8');
-
+    rl.question('Enter the word you are looking for:\n', async msg => {
+      try {
+        const res = await getJoke(msg);
         console.log(`\n${res}\n`);
         rl.prompt();
-      });
+        
+      } catch (error) {
+        console.log(error)
+        rl.prompt();
+      }
     });
+    
+  } else if (answer == 3) {
+
+    const res = await getTenRandomJokes();
+    console.log(`\n${res}\n`);
+    rl.prompt();
+
   } else if (answer == 4) {
+    console.log(jokes)
+    // const arrayJokes = JSON.parse(jokes)
+    // for (const key in object) {
+    //   if (Object.prototype.hasOwnProperty.call(object, key)) {
+    //     const element = object[key];
+        
+    //   }
+    // }
+//     const res = Object.fromEntries(jokes)
+// console.log(Object.keys(res))
+// console.log(Object.values(jokes) )
+
+
+
+  } 
+    
+  else if (answer == 5) {
     rl.close();
+  }
+  else {
+    console.log(`\n${invalidInputInfo}\n`);
+    rl.prompt();
   }
 }
