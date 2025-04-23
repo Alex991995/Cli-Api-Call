@@ -1,15 +1,11 @@
 import https from 'node:https';
 import path from 'node:path';
 import fs from 'node:fs';
-import { readFile } from 'fs/promises';
 const __dirname = import.meta.dirname;
 
 import { API_URL } from '../utils/constants.js';
 
 const pathToJsonFile = path.join(__dirname, '..', 'jokes.json');
-fs.writeFileSync(pathToJsonFile, JSON.stringify({}))
-// fs.writeFileSync(pathToJsonFile, JSON.stringify({ data: [] }, null, 2));
-
 
 
 const headers = {
@@ -40,7 +36,8 @@ export function getRandomJoke() {
   });
 }
 
-const mainObj = { data: [] };
+
+let dataOfJokes = [];
 export function getJoke(msg) {
   const writeStream = fs.createWriteStream(pathToJsonFile);
 
@@ -58,19 +55,13 @@ export function getJoke(msg) {
 
       res.on('end', async () => {
         if (!data.length) reject('There are not any jokes. Please try another input');
-        const obj = {};
         const arrayJokes = data.replace(/^\s/gm, '').split(/\n|\r/gm);
         const res = returnRandomJokeFromArray(arrayJokes);
-
-        const jsonFile = fs.readFileSync(pathToJsonFile, 'utf-8');
-        console.log(jsonFile)
-        // const existed = await ifExistJoke(res);
-        // console.log(file)
-
-        obj[1] = res;
-        mainObj.data.push(obj);
-
-        writeStream.write(JSON.stringify(mainObj));
+        if(res) {
+          dataOfJokes.push(res);
+        }
+       
+        fs.writeFileSync(pathToJsonFile, JSON.stringify(dataOfJokes));
         resolve(res);
       });
     });
@@ -97,16 +88,20 @@ export function getTenRandomJokes() {
   });
 }
 
-async function ifExistJoke(joke) {
-  try {
-    const file = await readFile(pathToJsonFile, 'utf8');
-    return JSON.parse(file);
+export function getMostPopularJoke() {
+  const jsonFile = fs.readFileSync(pathToJsonFile, 'utf-8');
+  const parsedJokes = JSON.parse(jsonFile);
 
-    //some logic
-  } catch (err) {
-    console.error('Error reading file:', err);
-  }
+  const objectWithUniqKey = parsedJokes.reduce((prev, current) => {
+    if (prev[current]) prev[current] += 1;
+    else prev[current] = 1;
+    return prev;
+  }, {});
+  const s = Object.entries(objectWithUniqKey).reduce((previous, current) =>
+    current[1] >= previous[1] ? current : previous,
+  )[0];
 }
+
 
 function returnRandomJokeFromArray(array) {
   const index = randomIntFromInterval(0, array.length - 1);
